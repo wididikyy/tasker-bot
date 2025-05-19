@@ -97,7 +97,3 @@ Anda juga dapat melihat [repositori GitHub Next.js](https://github.com/vercel/ne
 Cara termudah untuk mendeploy aplikasi Next.js Anda adalah dengan menggunakan [Platform Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) dari para pembuat Next.js.
 
 Lihat [dokumentasi deployment Next.js](https://nextjs.org/docs/app/building-your-application/deploying) kami untuk detail lebih lanjut.
-
------
-
-Bagaimana menurut Anda, apakah ada bagian lain yang ingin Anda tambahkan atau sesuaikan?
