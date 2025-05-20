@@ -96,6 +96,35 @@ export interface Database {
           sent_to_operator?: boolean
         }
       }
+      notifications: {
+        Row: {
+          id: string
+          title: string
+          message: string
+          task_id: string | null
+          is_read: boolean
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          message: string
+          task_id?: string | null
+          is_read?: boolean
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          message?: string
+          task_id?: string | null
+          is_read?: boolean
+          created_at?: string
+          user_id?: string
+        }
+      }
     }
   }
 }
@@ -103,3 +132,4 @@ export interface Database {
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Task = Database['public']['Tables']['tasks']['Row']
 export type TaskReport = Database['public']['Tables']['task_reports']['Row']
+export type Notification = Database['public']['Tables']['notifications']['Row']

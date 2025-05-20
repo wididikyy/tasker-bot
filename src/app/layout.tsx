@@ -5,6 +5,7 @@ import Header from "@/components/layout/header"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { NotificationProvider } from "@/lib/notification-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -33,21 +34,23 @@ export default async function RootLayout({
 
   const userData = user
     ? {
-        id: user.id,
-        email: user.email,
-        full_name: profile?.full_name,
-        role: profile?.role,
-      }
+      id: user.id,
+      email: user.email,
+      full_name: profile?.full_name,
+      role: profile?.role,
+    }
     : null
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <div className="flex min-h-screen flex-col">
-            <Header user={userData} />
-            <main className="flex-1">{children}</main>
-          </div>
+          <NotificationProvider>
+            <div className="flex min-h-screen flex-col">
+              <Header user={userData} />
+              <main className="flex-1 p-8">{children}</main>
+            </div>
+          </NotificationProvider>
         </ThemeProvider>
       </body>
     </html>

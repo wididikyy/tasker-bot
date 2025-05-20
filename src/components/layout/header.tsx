@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { User, LogOut, Menu } from "lucide-react"
+import { NotificationBell } from "./notification-bell"
 
 interface HeaderProps {
   user: {
@@ -40,11 +41,10 @@ export default function Header({ user }: HeaderProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                    pathname === item.href
+                  className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${pathname === item.href
                       ? "border-indigo-500 text-gray-900"
                       : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -53,27 +53,30 @@ export default function Header({ user }: HeaderProps) {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem className="font-medium">{user.full_name || user.email}</DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs text-gray-500">
-                    {user.role === "admin" ? "Administrator" : "Operator"}
-                  </DropdownMenuItem>
-                  <form action="/auth/logout" method="post">
-                    <DropdownMenuItem asChild>
-                      <button className="w-full flex items-center">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
-                      </button>
+              <>
+                <NotificationBell />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem className="font-medium">{user.full_name || user.email}</DropdownMenuItem>
+                    <DropdownMenuItem className="text-xs text-gray-500">
+                      {user.role === "admin" ? "Administrator" : "Operator"}
                     </DropdownMenuItem>
-                  </form>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <form action="/auth/logout" method="post">
+                      <DropdownMenuItem asChild>
+                        <button className="w-full flex items-center">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Log out</span>
+                        </button>
+                      </DropdownMenuItem>
+                    </form>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <div className="flex space-x-4">
                 <Link href="/login">
@@ -97,11 +100,10 @@ export default function Header({ user }: HeaderProps) {
                   <DropdownMenuItem key={item.name} asChild>
                     <Link
                       href={item.href}
-                      className={`block px-3 py-2 text-base font-medium ${
-                        pathname === item.href
+                      className={`block px-3 py-2 text-base font-medium ${pathname === item.href
                           ? "bg-indigo-50 text-indigo-700"
                           : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
+                        }`}
                     >
                       {item.name}
                     </Link>

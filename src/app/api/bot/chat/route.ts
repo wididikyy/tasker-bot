@@ -195,47 +195,50 @@ export async function POST(request: Request) {
 async function handleCreateTask(supabase: any, userId: string, taskData: TaskData, operators: Operator[]) {
   try {
     // Find the operator ID based on name
-    let operatorId = null
+    let operatorId = null;
+    let assignedOperatorName = "an operator"; // Default name for notification
     if (taskData.assigned_operator) {
       const matchedOperator = operators.find((op) =>
         op.full_name.toLowerCase().includes(taskData.assigned_operator?.toLowerCase() || ""),
-      )
+      );
       if (matchedOperator) {
-        operatorId = matchedOperator.id
+        operatorId = matchedOperator.id;
+        assignedOperatorName = matchedOperator.full_name;
       }
     }
 
     // If no operator found, use the first one (fallback)
     if (!operatorId && operators.length > 0) {
-      operatorId = operators[0].id
+      operatorId = operators[0].id;
+      assignedOperatorName = operators[0].full_name; // Update name for notification
     }
 
     if (!operatorId) {
       return NextResponse.json({
         response:
           "I couldn't find an operator to assign this task to. Please specify an operator name or add operators to the system first.",
-      })
+      });
     }
 
     // Parse due date
-    let dueDate = new Date()
+    let dueDate = new Date();
     if (taskData.due_date) {
       if (taskData.due_date.toLowerCase() === "tomorrow") {
-        dueDate.setDate(dueDate.getDate() + 1)
+        dueDate.setDate(dueDate.getDate() + 1);
       } else if (taskData.due_date.toLowerCase().includes("next week")) {
-        dueDate.setDate(dueDate.getDate() + 7)
+        dueDate.setDate(dueDate.getDate() + 7);
       } else if (taskData.due_date.toLowerCase().includes("next month")) {
-        dueDate.setMonth(dueDate.getMonth() + 1)
+        dueDate.setMonth(dueDate.getMonth() + 1);
       } else {
         // Try to parse the date
-        const parsedDate = new Date(taskData.due_date)
+        const parsedDate = new Date(taskData.due_date);
         if (!isNaN(parsedDate.getTime())) {
-          dueDate = parsedDate
+          dueDate = parsedDate;
         }
       }
     } else {
       // Default to a week from now if no date specified
-      dueDate.setDate(dueDate.getDate() + 7)
+      dueDate.setDate(dueDate.getDate() + 7);
     }
 
     // Create the task
@@ -250,12 +253,33 @@ async function handleCreateTask(supabase: any, userId: string, taskData: TaskDat
         assigned_by: userId,
         assigned_to: operatorId,
       })
-      .select()
-      .single()
+      .select("id") // Penting: Pilih ID tugas yang baru dibuat
+      .single();
 
     if (error) {
-      throw error
+      throw error;
     }
+
+    // --- Bagian baru untuk notifikasi ---
+    if (task && task.id) {
+      const notificationTitle = "New Task Assigned!";
+      const notificationMessage = `You have been assigned a new task: "${taskData.title || "New Task"}". Due: ${dueDate.toLocaleDateString()}.`;
+
+      const { error: notificationError } = await supabase.from("notifications").insert({
+        user_id: operatorId, // ID operator yang ditugaskan
+        title: notificationTitle,
+        message: notificationMessage,
+        task_id: task.id, // ID tugas yang baru dibuat
+        is_read: false,
+      });
+
+      if (notificationError) {
+        console.error("Error sending notification for new task:", notificationError.message);
+      } else {
+        console.log("Notification sent successfully for new task.");
+      }
+    }
+    // --- Akhir bagian notifikasi ---
 
     // Generate a confirmation message
     const confirmationPrompt = `
@@ -263,23 +287,24 @@ async function handleCreateTask(supabase: any, userId: string, taskData: TaskDat
       - Title: ${taskData.title || "New Task"}
       - Due date: ${dueDate.toLocaleDateString()}
       - Priority: ${taskData.priority || "medium"}
-      - Assigned to: ${operators.find((op) => op.id === operatorId)?.full_name || "an operator"}
-      
-      Keep it concise and friendly.
-    `
+      - Assigned to: ${assignedOperatorName}
 
-    const confirmationMessage = await generateContent(confirmationPrompt)
+      Keep it concise and friendly.
+    `;
+
+    // Pastikan generateContent tersedia dan berfungsi dengan baik
+    const confirmationMessage = await generateContent(confirmationPrompt);
 
     return NextResponse.json({
       response: confirmationMessage,
       action: "create_task",
       task: task,
-    })
+    });
   } catch (error: any) {
-    console.error("Error creating task:", error)
+    console.error("Error creating task:", error);
     return NextResponse.json({
       response: `I encountered an error while trying to create the task: ${error.message}. Please try again with clearer instructions.`,
-    })
+    });
   }
 }
 

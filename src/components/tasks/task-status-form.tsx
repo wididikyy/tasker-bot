@@ -32,12 +32,43 @@ export default function TaskStatusForm({ taskId, currentStatus }: TaskStatusForm
     }
   }, [status])
 
+  // Fungsi untuk mengirim notifikasi
+  const sendNotification = async (recipientId: string, notificationTitle: string, notificationMessage: string, taskId?: string) => {
+    const { error: notificationError } = await supabase.from("notifications").insert({
+      user_id: recipientId,
+      title: notificationTitle,
+      message: notificationMessage,
+      task_id: taskId || null,
+      is_read: false,
+    })
+
+    if (notificationError) {
+      console.error("Error sending notification:", notificationError.message)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
 
     try {
+      // Dapatkan data tugas sebelum diperbarui untuk mendapatkan assigned_by (admin)
+      const { data: taskData, error: fetchTaskError } = await supabase
+        .from("tasks")
+        .select("title, assigned_by")
+        .eq("id", taskId)
+        .single();
+
+      if (fetchTaskError) throw fetchTaskError;
+      if (!taskData) {
+        setError("Task not found.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { title: taskTitle, assigned_by: adminId } = taskData;
+
       // Update task status
       const { error: updateError } = await supabase
         .from("tasks")
@@ -54,10 +85,23 @@ export default function TaskStatusForm({ taskId, currentStatus }: TaskStatusForm
         task_id: taskId,
         status,
         message: comment || `Task status updated to ${status}`,
-        sent_to_operator: false,
+        sent_to_operator: false, // Ini harus tetap false jika laporan ini dari operator ke admin
       })
 
       if (reportError) throw reportError
+
+      // Kirim notifikasi ke admin
+      let notificationMessage = `Task "${taskTitle}" status changed to: ${status.replace(/_/g, ' ')}.`;
+      if (comment) {
+        notificationMessage += ` Comment: "${comment}"`;
+      }
+
+      await sendNotification(
+        adminId, // Mengirim notifikasi ke admin yang menugaskan tugas
+        `Task Update: ${taskTitle}`,
+        notificationMessage,
+        taskId
+      );
 
       // Show completion message if task is marked as completed
       if (status === "completed") {

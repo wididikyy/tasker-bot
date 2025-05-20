@@ -45,6 +45,21 @@ export default function TaskForm({ operators, userId, task }: TaskFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Fungsi untuk mengirim notifikasi
+  const sendNotification = async (recipientId: string, notificationTitle: string, notificationMessage: string, taskId?: string) => {
+    const { error: notificationError } = await supabase.from("notifications").insert({
+      user_id: recipientId,
+      title: notificationTitle,
+      message: notificationMessage,
+      task_id: taskId || null,
+      is_read: false,
+    })
+
+    if (notificationError) {
+      console.error("Error sending notification:", notificationError.message)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -57,9 +72,11 @@ export default function TaskForm({ operators, userId, task }: TaskFormProps) {
     }
 
     try {
+      let taskId: string | undefined
+
       if (task) {
         // Update existing task
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("tasks")
           .update({
             title,
@@ -70,11 +87,24 @@ export default function TaskForm({ operators, userId, task }: TaskFormProps) {
             updated_at: new Date().toISOString(),
           })
           .eq("id", task.id)
+          .select("id") // Pilih ID untuk digunakan di notifikasi
 
         if (error) throw error
+        taskId = data?.[0]?.id
+
+        // Kirim notifikasi update
+        const assignedOperator = operators.find(op => op.id === assignedTo);
+        const operatorName = assignedOperator ? assignedOperator.full_name : "operator";
+        await sendNotification(
+          assignedTo,
+          "Task Updated!",
+          `Task "${title}" has been updated and assigned to ${operatorName}.`,
+          taskId
+        );
+
       } else {
         // Create new task
-        const { error } = await supabase.from("tasks").insert({
+        const { data, error } = await supabase.from("tasks").insert({
           title,
           description,
           due_date: dueDate.toISOString(),
@@ -82,9 +112,20 @@ export default function TaskForm({ operators, userId, task }: TaskFormProps) {
           priority,
           assigned_by: userId,
           assigned_to: assignedTo,
-        })
+        }).select("id"); // Pilih ID untuk digunakan di notifikasi
 
         if (error) throw error
+        taskId = data?.[0]?.id;
+
+        // Kirim notifikasi tugas baru
+        const assignedOperator = operators.find(op => op.id === assignedTo);
+        const operatorName = assignedOperator ? assignedOperator.full_name : "operator";
+        await sendNotification(
+          assignedTo,
+          "New Task Assigned!",
+          `You have been assigned a new task: "${title}". Due: ${format(dueDate, "PPP")}.`,
+          taskId
+        );
       }
 
       router.push("/tasks")
